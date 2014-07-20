@@ -37,7 +37,7 @@ class IOSBuild
       when :clean
         cmd = "xcodebuild clean"
       when :build
-        cmd = "xcodebuild -sdk iphonesimulator7.0 -scheme #{scheme}"
+        cmd = "xcodebuild -sdk iphonesimulator7.0 -scheme \"#{scheme}\""
       end
       success = run_cmd(cmd) if cmd
     ensure
@@ -54,7 +54,7 @@ class IOSBuild
 
   def do_test
     # At present, the destination OS is hardwired in; this should be changed later
-    cmd = "xcodebuild test -scheme #{scheme} -destination OS=7.1,name=iPad"
+    cmd = "xcodebuild test -scheme \"#{scheme}\" -destination OS=7.1,name=iPad"
     info("Running command '#{cmd}':")
 
     output,success = scall(cmd,false)
@@ -151,8 +151,18 @@ class IOSBuild
 
       die "No schemes found" if schemes.empty?
 
-      info("Multiple schemes found; choosing first") if schemes.size > 1
-      @scheme = schemes[0]
+      # If user specified scheme on command line, see if it exists
+      preferred_scheme = @options[:scheme]
+      if preferred_scheme
+        if !schemes.include?(preferred_scheme)
+          die "No such scheme '#{preferred_scheme} found; candidates are:\n#{schemes}"
+        end
+        @scheme = preferred_scheme
+      else
+        @scheme = schemes[0]
+        info("Multiple schemes found: #{schemes}; choosing #{@scheme}") if schemes.size > 1
+      end
+
     end
     @scheme
   end
@@ -170,6 +180,7 @@ EOS
       opt :test,"test (default)"
       opt :verbose,"verbose"
       opt :directory,"directory to start in",:type => :string
+      opt :scheme,"scheme",:type => :string
     end
 
     @options = Trollop::with_standard_exception_handling p do
