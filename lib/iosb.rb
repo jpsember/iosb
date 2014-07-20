@@ -53,9 +53,12 @@ class IOSBuild
 
 
   def do_test
-    cmd = "xcodebuild test -scheme #{scheme} -destination OS=7.0,name=iPad"
+    # At present, the destination OS is hardwired in; this should be changed later
+    cmd = "xcodebuild test -scheme #{scheme} -destination OS=7.1,name=iPad"
     info("Running command '#{cmd}':")
+
     output,success = scall(cmd,false)
+
     if success && !@verbose
       info "...all tests passed"
     else
