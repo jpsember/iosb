@@ -53,8 +53,10 @@ class IOSBuild
 
 
   def do_test
-    # At present, the destination OS is hardwired in; this should be changed later
-    cmd = "xcodebuild test -scheme \"#{scheme}\" -destination OS=7.1,name=iPad"
+    cmd = "xcodebuild test -scheme \"#{scheme}\""
+    if @options[:destination]
+      cmd << " -destination \"#{@options[:destination]}\""
+    end
     info("Running command '#{cmd}':")
 
     output,success = scall(cmd,false)
@@ -181,6 +183,7 @@ EOS
       opt :verbose,"verbose"
       opt :directory,"directory to start in",:type => :string
       opt :scheme,"scheme",:type => :string
+      opt :destination,"destination",:type => :string
     end
 
     @options = Trollop::with_standard_exception_handling p do
