@@ -3,7 +3,9 @@ require 'js_base'
 
 req 'iosb/test_case_entry'
 
-# Build, run, and test iOS applications from the command line
+BANNER =<<-EOS
+Build, run, test iOS applications from the command line
+EOS
 
 class IOSBuild
 
@@ -11,8 +13,6 @@ class IOSBuild
     @xcodebuild_list = nil
     @scheme = nil
     @verbose = false
-    @test_cases = {}
-    @failed_test_names = []
   end
 
   def run(args=ARGV)
@@ -64,56 +64,9 @@ class IOSBuild
     if success && !@verbose
       info "...all tests passed"
     else
-      unimp("problem parsing some errors, e.g., snapshot content changed")
-      if @verbose
-        puts "(((Unfiltered test output:\n#{output} )))\n"
-      end
-      parse_tests_output(output)
-      names = @test_cases.keys.sort
-      names.each do |test_name|
-        entry = @test_cases[test_name]
-        next if !@verbose && entry.passed
-        puts "#{entry.passed ? "Passed" : "Failed"}: #{entry.name}"
-        output = entry.to_s.chomp
-        puts output if output.length != 0
-      end
+      puts "Test output:\n#{output}\n"
     end
     success
-  end
-
-
-  TEST_CASE_EXPR = /^Test Case '([^']+)'\s+([a-zA-Z]*)/
-
-  def parse_tests_output(output)
-    @test_cases.clear
-    @failed_test_names.clear
-
-    lines = output.lines.map{|x| x.chomp}
-    current_entry = nil
-    lines.each do |line|
-      match = TEST_CASE_EXPR.match(line)
-      if !match
-        if current_entry
-          current_entry.add(line)
-        end
-        next
-      end
-
-      test_name = match[1]
-      test_event = match[2]
-      if current_entry
-        raise TestParseException if current_entry.name != test_name
-        current_entry.passed = (test_event == 'passed')
-        @test_cases[current_entry.name] = current_entry
-        @failed_test_names.push(current_entry.name) if !current_entry.passed
-        current_entry = nil
-      else
-        raise TestParseException if test_event != 'started'
-        current_entry = TestCaseEntry.new(test_name)
-      end
-    end
-    raise TestParseException if current_entry
-    @failed_test_names.sort!
   end
 
 
@@ -123,7 +76,6 @@ class IOSBuild
     info(output)
     info("\n")
 
-    # puts output
     if !success
       puts "\n....Problem executing '#{cmd}':\n\n#{output}\n"
     end
@@ -172,11 +124,7 @@ class IOSBuild
   def parse_args(argv)
 
     p = Trollop::Parser.new do
-      banner <<-EOS
-
-Build, run, test iOS applications from the command line
-
-EOS
+      banner BANNER
       opt :clean,"clean"
       opt :build,"build"
       opt :test,"test (default)"
